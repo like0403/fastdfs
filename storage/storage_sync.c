@@ -37,7 +37,9 @@
 #include "storage_sync.h"
 #include "trunk_mem.h"
 
-#define SYNC_BINLOG_FILE_MAX_SIZE	1024 * 1024 * 1024
+// binlog file 最大值 1G
+#define SYNC_BINLOG_FILE_MAX_SIZE	1024 * 1024 * 1024  
+// binlog file 前缀
 #define SYNC_BINLOG_FILE_PREFIX		"binlog"
 #define SYNC_BINLOG_INDEX_FILENAME	SYNC_BINLOG_FILE_PREFIX".index"
 #define SYNC_MARK_FILE_EXT		".mark"
@@ -50,6 +52,7 @@
 #define MARK_ITEM_UNTIL_TIMESTAMP	"until_timestamp"
 #define MARK_ITEM_SCAN_ROW_COUNT	"scan_row_count"
 #define MARK_ITEM_SYNC_ROW_COUNT	"sync_row_count"
+// binlog file 写缓冲大小 16K
 #define SYNC_BINLOG_WRITE_BUFF_SIZE	(16 * 1024)
 
 int g_binlog_fd = -1;

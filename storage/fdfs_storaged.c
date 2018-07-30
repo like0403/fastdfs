@@ -98,10 +98,13 @@ int main(int argc, char *argv[])
 	g_current_time = time(NULL);
 	g_up_time = g_current_time;
 
+	// lib logger.c 初始化日志
 	log_init2();
+	// trunk_shared.c 初始化块
 	trunk_shared_init();
 
 	conf_filename = argv[1];
+	// lib process_ctrl.c 读取配置文件
 	if ((result=get_base_path_from_conf_file(conf_filename,
 		g_fdfs_base_path, sizeof(g_fdfs_base_path))) != 0)
 	{
@@ -109,6 +112,7 @@ int main(int argc, char *argv[])
 		return result;
 	}
 
+	// 检查PID文件是否存在
 	snprintf(pidFilename, sizeof(pidFilename),
 		"%s/data/fdfs_storaged.pid", g_fdfs_base_path);
 	if ((result=process_action(pidFilename, argv[2], &stop)) != 0)
@@ -127,6 +131,7 @@ int main(int argc, char *argv[])
 	}
 
 #if defined(DEBUG_FLAG) && defined(OS_LINUX)
+	// lib shared_func.c
 	if (getExeAbsoluteFilename(argv[0], g_exe_name, \
 		sizeof(g_exe_name)) == NULL)
 	{
@@ -136,7 +141,9 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	// lib shared_func.c
 	daemon_init(false);
+	// 文件权限
 	umask(0);
 
 	memset(g_bind_addr, 0, sizeof(g_bind_addr));
@@ -156,6 +163,7 @@ int main(int argc, char *argv[])
 		return result;
 	}
 
+	// lib sockopt.c
 	if ((result=tcpsetserveropt(sock, g_fdfs_network_timeout)) != 0)
 	{
 		logCrit("exit abnormally!\n");
@@ -163,6 +171,7 @@ int main(int argc, char *argv[])
 		return result;
 	}
 
+	// lib process_ctrl.c
 	if ((result=write_to_pid_file(pidFilename)) != 0)
 	{
 		log_destroy();
@@ -281,6 +290,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef WITH_HTTPD
+	// http模块
 	if (!g_http_params.disabled)
 	{
 		if ((result=storage_httpd_start(g_bind_addr)) != 0)
@@ -308,16 +318,19 @@ int main(int argc, char *argv[])
 	scheduleArray.count = 0;
 	memset(scheduleEntries, 0, sizeof(scheduleEntries));
 
+	// 日志定时线程
 	INIT_SCHEDULE_ENTRY(scheduleEntries[scheduleArray.count],
 		scheduleArray.count + 1, TIME_NONE, TIME_NONE, TIME_NONE,
 		g_sync_log_buff_interval, log_sync_func, &g_log_context);
 	scheduleArray.count++;
 
+	// fdfs binlog线程
 	INIT_SCHEDULE_ENTRY(scheduleEntries[scheduleArray.count],
 		scheduleArray.count + 1, TIME_NONE, TIME_NONE, TIME_NONE,
 		g_sync_binlog_buff_interval, fdfs_binlog_sync_func, NULL);
 	scheduleArray.count++;
 
+	// 文件状态线程
 	INIT_SCHEDULE_ENTRY(scheduleEntries[scheduleArray.count],
 		scheduleArray.count + 1, TIME_NONE, TIME_NONE, TIME_NONE,
 		g_sync_stat_file_interval, fdfs_stat_file_sync_func, NULL);
@@ -325,6 +338,7 @@ int main(int argc, char *argv[])
 
 	if (g_if_use_trunk_file)
 	{
+		// trunk binlog线程
 		INIT_SCHEDULE_ENTRY(scheduleEntries[scheduleArray.count],
 			scheduleArray.count + 1, TIME_NONE, TIME_NONE, TIME_NONE,
 			1, trunk_binlog_sync_func, NULL);
@@ -333,6 +347,7 @@ int main(int argc, char *argv[])
 
 	if (g_use_access_log)
 	{
+		// log sync 线程
 		INIT_SCHEDULE_ENTRY(scheduleEntries[scheduleArray.count],
 			scheduleArray.count + 1, TIME_NONE, TIME_NONE, TIME_NONE,
 			g_sync_log_buff_interval, log_sync_func, &g_access_log_context);
@@ -376,6 +391,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+
+	// 开始
 	if ((result=sched_start(&scheduleArray, &schedule_tid, \
 		g_thread_stack_size, (bool * volatile)&g_continue_flag)) != 0)
 	{
@@ -460,6 +477,8 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+
+// SIGNAL : SIGINT / SIGTERM / SIGQUIT
 static void sigQuitHandler(int sig)
 {
 	if (!bTerminateFlag)
@@ -510,6 +529,7 @@ static void sigAlarmHandler(int sig)
 		"signal server to quit done", __LINE__);
 }
 
+// SIGNAL : SIGHUP
 static void sigHupHandler(int sig)
 {
 	if (g_rotate_error_log)
@@ -526,6 +546,7 @@ static void sigHupHandler(int sig)
 		"catch signal %d, rotate log", __LINE__, sig);
 }
 
+// SIGNAL : SIGUSR1 / SIGUSR2
 static void sigUsrHandler(int sig)
 {
 	logInfo("file: "__FILE__", line: %d, " \
@@ -533,6 +554,7 @@ static void sigUsrHandler(int sig)
 }
 
 #if defined(DEBUG_FLAG)
+// SIGNAL : SIGUSR1 /  SIGUSR2
 static void sigDumpHandler(int sig)
 {
 	static bool bDumpFlag = false;
