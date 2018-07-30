@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 	struct sigaction act;
 	ScheduleEntry scheduleEntries[SCHEDULE_ENTRIES_MAX_COUNT];
 	ScheduleArray scheduleArray;
-	char pidFilename[MAX_PATH_SIZE];
+	char pidFilename[MAX_PATH_SIZE];  // pid文件
 	bool stop;
 
 	if (argc < 2)
